@@ -1,12 +1,21 @@
 """extract_claims node: reads one witness's parsed transcript exchanges and
-pulls out discrete factual claims, each tagged with topic keywords for the
-later grouping step.
+pulls out discrete factual claims, each tagged with topic keywords and an
+explicit subject (about_person) for the later grouping step.
 
 Citation trust boundary: the LLM never invents a page/line. It only refers
 to claims by the index of a numbered exchange list we hand it; the actual
 {page, line} is attached afterward from transcript_parser's own output --
 the same pattern the last project used for hop file/line (tool-provided
 ground truth, LLM only judges/extracts against it).
+
+about_person exists because free-text topic tags alone cannot reliably
+link two claims about the same person's status when only one side names
+them -- a witness describing their OWN location never says their own name
+("I was standing next to the forklift"), while another witness describing
+that SAME person's location does ("Kessler wasn't on the floor"). No
+amount of tag-wording tuning closes that gap; it needs an explicit,
+low-cardinality subject field instead of inferring the subject from
+vocabulary that structurally isn't there on one side of the pair.
 """
 from typing import List
 
@@ -23,14 +32,16 @@ Rules:
 - Skip answers that are purely procedural, an agreement to proceed, or contain no factual content (e.g. "Take your time.").
 - One exchange can yield zero, one, or multiple claims if it asserts multiple distinct facts.
 - Each claim must reference the exact exchange_index it came from -- never combine facts from two different exchanges into one claim.
-- topic_tags: give 1-3 tags per claim, each a 2-3 word specific compound phrase naming the actual thing the claim is about (e.g. "safety guard", "hydraulic warning light", "kessler whereabouts", "unit 12 operation"). Never use a single bare word as a tag (not "kessler", not "accident", not "unit" alone) -- a witness's own name or a generic case word like "accident" recurs across dozens of unrelated claims and is useless for telling claims apart. Each tag must be specific enough that two claims sharing a tag are actually likely to be about the same real-world thing.
+- about_person: the surname of the person whose status/location/action/knowledge this claim is actually about. If the witness is describing themselves (even without saying their own name, e.g. "I was standing next to the forklift"), use the WITNESS's own surname. If the witness is describing someone else (e.g. "Kessler wasn't on the floor"), use that OTHER person's surname instead.
+- topic_tags: give 1-3 tags per claim, each a 2-3 word specific compound phrase naming the concrete thing the claim is about (e.g. "safety guard", "hydraulic warning light", "unit 12 operation"). Never use a single bare word as a tag, and never use a person's name as a tag -- that's what about_person is for.
 """
 
 
 class ExtractedClaim(BaseModel):
     exchange_index: int
     claim_text: str = Field(description="The factual claim, in the witness's own words or a faithful close paraphrase")
-    topic_tags: List[str] = Field(description="2-4 short, specific, lowercase keyword tags")
+    about_person: str = Field(description="Surname of who this claim's status/location/action is actually about")
+    topic_tags: List[str] = Field(description="1-3 short, specific, lowercase compound-phrase tags (never a bare name)")
 
 
 class ExtractedClaims(BaseModel):
@@ -46,7 +57,7 @@ def _format_exchanges(exchanges):
 
 def extract_claims(llm, witness, exchanges):
     """exchanges: parsed transcript_parser output for one document.
-    Returns a list of claim dicts: {witness, page, line, speaker, claim_text, topic_tags}."""
+    Returns a list of claim dicts: {witness, page, line, claim_text, about_person, topic_tags}."""
     structured_llm = llm.with_structured_output(ExtractedClaims)
     fallback = ExtractedClaims(claims=[])
     result = invoke_structured(
@@ -73,6 +84,7 @@ def extract_claims(llm, witness, exchanges):
                 "page": source["page"],
                 "line": source["line"],
                 "claim_text": c.claim_text,
+                "about_person": c.about_person.strip().lower(),
                 "topic_tags": [t.strip().lower() for t in c.topic_tags if t.strip()],
             }
         )

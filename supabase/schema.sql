@@ -34,6 +34,7 @@ create table claims (
   page integer not null,
   line integer not null,
   claim_text text not null,
+  about_person text not null default '',
   topic_tags text[] not null default '{}',
   created_at timestamptz not null default now()
 );

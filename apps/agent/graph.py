@@ -33,7 +33,11 @@ class GraphState(TypedDict):
 def get_llm():
     from langchain_groq import ChatGroq
 
-    return ChatGroq(model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"), temperature=0)
+    return ChatGroq(
+        model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+        temperature=0,
+        max_tokens=4096,  # default cut a longer document's claim list off mid-JSON -- see PLAN.md
+    )
 
 
 def ingest(state: GraphState) -> dict:
@@ -66,7 +70,7 @@ def extract_claims(state: GraphState) -> dict:
         doc_claims = extract_claims_llm(llm, doc["witness"], state["exchanges_by_doc"][doc["document_id"]])
         for c in doc_claims:
             claim_id = db.write_claim(
-                doc["document_id"], c["witness"], c["page"], c["line"], c["claim_text"], c["topic_tags"]
+                doc["document_id"], c["witness"], c["page"], c["line"], c["claim_text"], c["about_person"], c["topic_tags"]
             )
             c["id"] = claim_id
             claims.append(c)

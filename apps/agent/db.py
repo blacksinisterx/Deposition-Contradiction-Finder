@@ -84,7 +84,7 @@ def write_progress(analysis_id, node, message):
     client.table("analyses").update({"progress": progress}).eq("id", analysis_id).execute()
 
 
-def write_claim(document_id, witness, page, line, claim_text, topic_tags):
+def write_claim(document_id, witness, page, line, claim_text, about_person, topic_tags):
     client = _get_client()
     if not client:
         print(f"[claim] {witness} p.{page}:{line} -- {claim_text}")
@@ -96,6 +96,7 @@ def write_claim(document_id, witness, page, line, claim_text, topic_tags):
             "page": page,
             "line": line,
             "claim_text": claim_text,
+            "about_person": about_person,
             "topic_tags": topic_tags,
         }
     ).execute()
