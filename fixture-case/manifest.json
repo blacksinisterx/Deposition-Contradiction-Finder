@@ -1,0 +1,8 @@
+{
+  "case_name": "Martinez v. Coastal Freight Co.",
+  "documents": [
+    { "witness_name": "David Kessler", "deposition_date": "2026-03-03", "file_name": "kessler-deposition-1.txt" },
+    { "witness_name": "David Kessler", "deposition_date": "2026-04-21", "file_name": "kessler-deposition-2.txt" },
+    { "witness_name": "Maria Torres", "deposition_date": "2026-03-10", "file_name": "torres-deposition.txt" }
+  ]
+}

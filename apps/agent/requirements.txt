@@ -1,0 +1,5 @@
+langgraph==0.2.60
+langchain-groq==0.2.1
+supabase==2.31.0
+python-dotenv==1.0.1
+httpx==0.28.1
