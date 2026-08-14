@@ -52,7 +52,7 @@ Statement B -- ${claimB.witness_name}, p.${claimB.page}:${claimB.line}:
 Reasoning for the verdict:
 ${contradiction.reasoning}
 
-Answer the attorney's questions about this contradiction directly and concisely. Ground every answer in the two statements and the reasoning above -- don't invent details they don't support.`;
+Answer the attorney's questions about this contradiction directly and concisely. Ground every answer in the two statements and the reasoning above -- don't invent details they don't support. Reply in plain prose, no markdown formatting (no tables, bullet lists, or asterisk-bolding) -- this renders as plain text.`;
 
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
