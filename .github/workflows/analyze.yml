@@ -1,0 +1,50 @@
+name: Run Deposition Analysis
+
+# Triggered on-demand by the Next.js API route instead of hitting a
+# persistent server -- see PLAN.md and the prior Exploit-Path-Tracer
+# project's own PLAN.md for why: three real free-tier hosting platforms
+# turned out to require payment or card verification despite "free"
+# marketing. GitHub Actions gives every account genuinely free, no-card
+# compute, and graph.py/tools/nodes/db.py need zero changes to run here --
+# ci_run_analysis.py is the only new entrypoint, doing exactly what
+# run_analysis.py does locally.
+on:
+  workflow_dispatch:
+    inputs:
+      case_id:
+        description: "Supabase cases.id row this analysis belongs to"
+        required: true
+      analysis_id:
+        description: "Supabase analyses.id row to write progress/status to"
+        required: true
+      documents_json:
+        description: 'JSON array: [{"document_id","witness_name","storage_path"}, ...]'
+        required: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Run analysis
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python ci_run_analysis.py \
+            --case-id "${{ github.event.inputs.case_id }}" \
+            --analysis-id "${{ github.event.inputs.analysis_id }}" \
+            --documents-json '${{ github.event.inputs.documents_json }}'
