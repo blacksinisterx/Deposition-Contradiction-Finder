@@ -14,3 +14,5 @@ apps/agent/.env
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Design system generator output (project-specific, not needed in repo history noise)
