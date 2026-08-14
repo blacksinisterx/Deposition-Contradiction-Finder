@@ -60,7 +60,7 @@ export default function TimelinePage() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="flex w-full max-w-3xl flex-col gap-(--space-md)"
+        className="flex w-full max-w-6xl flex-col gap-(--space-md)"
       >
         <motion.div variants={item} className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-heading text-xl">{caseName ?? "Timeline"}</h1>
@@ -81,32 +81,37 @@ export default function TimelinePage() {
           </motion.p>
         )}
 
-        {witnesses.map((witness) => (
-          <motion.div key={witness} variants={item}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-heading text-base">
-                  <User className="size-4 text-secondary" />
-                  {witness}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="relative flex flex-col gap-(--space-md) pl-5">
-                  <div className="absolute top-2 bottom-2 left-[7px] w-px bg-border" />
-                  {byWitness[witness].map((claim) => (
-                    <li key={claim.id} className="relative flex flex-col gap-1">
-                      <span className="absolute top-1 -left-[19px] size-2 rounded-full bg-secondary" />
-                      <span className="font-mono text-xs text-muted-foreground">
-                        p.{claim.page}:{claim.line}
-                      </span>
-                      <p className="text-sm text-foreground">{claim.claim_text}</p>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+        <div
+          className="grid items-start gap-(--space-md)"
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}
+        >
+          {witnesses.map((witness) => (
+            <motion.div key={witness} variants={item}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-heading text-base">
+                    <User className="size-4 text-secondary" />
+                    {witness}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ol className="relative flex flex-col gap-(--space-md) pl-5">
+                    <div className="absolute top-2 bottom-2 left-[7px] w-px bg-border" />
+                    {byWitness[witness].map((claim) => (
+                      <li key={claim.id} className="relative flex flex-col gap-1">
+                        <span className="absolute top-1 -left-[19px] size-2 rounded-full bg-secondary" />
+                        <span className="font-mono text-xs text-muted-foreground">
+                          p.{claim.page}:{claim.line}
+                        </span>
+                        <p className="text-sm text-foreground">{claim.claim_text}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
     </div>
   );
