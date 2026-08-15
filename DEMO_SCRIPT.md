@@ -1,58 +1,52 @@
-# Demo Video Script
+# Demo Script — Deposition Contradiction Finder
 
-Target length: 3–5 minutes. Screen-record https://deposition-contradiction-finder.vercel.app/ live — every step below is a real action against the real deployed app, nothing staged or mocked. Have the three `fixture-case/*.txt` files ready before you start recording.
-
-## 1. Hook (15s)
-
-> "This is an AI litigation-prep agent. You give it multiple witness depositions from the same case, and it doesn't just search for two statements that share a keyword — it builds a real timeline per witness, and it reads across documents to decide: do these two statements *genuinely* conflict, or do they just sound alike on the surface? I'm going to show you the exact moment it gets that distinction right."
-
-## 2. The problem, in one sentence (15s)
-
-> "Any text search can tell you two witnesses both said the words 'warning light.' Almost nothing can tell you whether they're talking about the same warning light, on the same equipment, at the same time — that's the gap this fills."
-
-## 3. Live upload (30s)
-
-- Show the home page.
-- Click **Start a new case**, name it (e.g. "Martinez v. Coastal Freight Co.").
-- Upload the three transcripts, tag `kessler-deposition-1.txt` and `kessler-deposition-2.txt` as **David Kessler**, `torres-deposition.txt` as **Maria Torres**.
-- Narrate while it uploads: "These go straight to storage, then the analysis runs as a real on-demand job — an actual GitHub Actions VM parsing the transcripts and calling an LLM, not a mock."
-
-## 4. Live analysis progress (30–90s)
-
-- Let the Realtime progress log fill in on screen — real, roughly 1–3 minutes total.
-- Narrate the pipeline as node names appear: "First a deterministic parser extracts every exchange with its exact page and line number — that's the ground truth, and the LLM never gets to invent a citation later. Then it extracts discrete factual claims per witness. Then a grouping step — pure Python, no LLM — finds which claims across different witnesses are worth comparing. Only then does an LLM judge each candidate pair."
-- When it hits `completed`, click **View Timeline**.
-
-## 5. The timeline (15s)
-
-- Scroll through David Kessler's and Maria Torres's per-witness claim lists, pointing out the page:line citation on each one.
-- "Every one of these citations traces back to an exact line in the real transcript — nothing here is summarized from memory."
-
-## 6. THE key moment — open the "warning light" dismissal (60–90s)
-
-This is the centerpiece. Take your time here.
-
-- Click through to Contradictions, open the "warning light" pairing.
-- Read both cited statements out loud as they're on screen: Kessler's forklift warning light (p.4:18) vs. Torres's break-room fire-alarm test-cycle indicator (p.10:13).
-- "A naive matcher sees 'warning light' on and 'warning light' off and flags this instantly. This agent read both statements in full, recognized these are two completely different lights, on two different pieces of equipment, four days apart — and correctly marked this **consistent**, not confirmed."
-
-## 7. A confirmed contradiction, full detail (30–45s)
-
-- Open the "Kessler's location at the time of the accident" contradiction (Kessler vs. Torres) or the self-contradiction (Kessler's two depositions, safety guard removal).
-- Show both cited statements side-by-side and the reasoning.
-- "Here the agent correctly kept this one confirmed — two direct, material, incompatible accounts of the same fact."
-
-## 8. Chat follow-up (20–30s)
-
-- Type a real question into the chat panel — e.g. "why isn't this just a memory gap?"
-- Let the real response stream in on screen. "This isn't canned — it's the same model, grounded in this exact contradiction's two statements and the verdict reasoning, answering live."
-
-## 9. Close (15–20s)
-
-> "A deterministic parser gives ground-truth citations. A grouping step narrows down what's actually worth comparing. And an LLM reads across documents and reasons about it like a litigation associate would — including correctly dismissing the pair that only looks like a contradiction. That's the difference between a keyword search and an agent."
+Aligned to the actual recording, `deposition-contradiction-finder-demo-raw.mp4` / `.webm` (4:49, video-only, no audio — read either script aloud over it). Every screen, number, and citation below is verified frame-by-frame against that file. Note: this run surfaced a different pair of headline contradictions than the ones documented in `fixture-case/ANSWER_KEY.md` (same fixture, same correctness, the LLM just grouped a different pair as its top result this time) — the script below describes exactly what's actually on screen, not the idealized case.
 
 ---
 
-## Optional extended cut (if you want a longer version)
+## Version A — Simple Explanation (non-technical audience)
 
-- Briefly mention `PLAN.md`'s verification log as evidence of the real build process — a real over-grouping bug that burned a full day's Groq quota, a model that made the exact keyword-matching mistake this product exists to catch, and the running log of every real bug found fixing it.
+**[0:00–0:03] Home page**
+"This is an AI agent for litigation prep. You give it multiple witness depositions from the same case, and it doesn't just search for matching keywords — it actually reads across all of them and figures out where two witnesses are saying things that can't both be true."
+
+**[0:03–0:22] Uploading depositions**
+"I'm giving it three real deposition transcripts from a fictional case — two sessions with one witness, David Kessler, and one session with another witness, Maria Torres. I tag each file with who said it."
+
+**[0:22–4:05] Watching it work**
+"This is running for real now, live — no shortcuts. First it reads the raw transcripts and pulls out exact quotes with the page and line number they came from, so nothing gets summarized or made up. Then it figures out which statements from different witnesses are even worth comparing. Then, one pair at a time, it reads both statements and decides: is this an actual contradiction, or does it just sound like one?"
+
+**[4:05–4:33] A real contradiction**
+"Here's one it flagged. Kessler said he was working in Bay 3 that morning. Torres said he was on his break at that exact time. Those can't both be true — the agent catches that, and explains why. You can also just ask it questions about the finding and it answers using the actual statements."
+
+**[4:33–4:42] Not a contradiction**
+"And here's the important part — it doesn't just flag everything that looks similar. Kessler said he was in Bay 3 in the morning, and separately that he left work at 6pm. Those aren't contradictory at all — he could easily have done both, at different times of day. The agent correctly leaves this one alone instead of falsely flagging it."
+
+**[4:42–4:49] The full picture**
+"And this is the timeline — everything each witness said, side by side, so you can see both accounts of the same day at a glance."
+
+---
+
+## Version B — Technical Walkthrough (engineers)
+
+**[0:00–0:03] Home**
+Tagline states the mechanic directly: per-witness timeline + cross-document contradiction flagging with exact citations.
+
+**[0:03–0:22] New Case**
+Case name typed live: `Martinez v. Coastal Freight Co.`. Three `.txt` files added via the multi-file picker — `kessler-deposition-1.txt`, `kessler-deposition-2.txt`, `torres-deposition.txt` — each tagged with a witness name (`David Kessler` ×2, `Maria Torres`). On submit: direct upload to the `deposition-uploads` Supabase Storage bucket, then `POST /api/analyses` creates the case/documents/analysis rows and dispatches the `analyze.yml` GitHub Actions workflow with a JSON-encoded document list.
+
+**[0:22–4:05] Live pipeline, streamed via Supabase Realtime**
+- `ingest` — analyzing 3 documents
+- `parse_documents` — the deterministic `[page:line] Q./A.` regex parser; **57 exchanges parsed across 3 documents**
+- `extract_claims` — one Groq (`openai/gpt-oss-120b`) call per document: David Kessler 1/3, 2/3, Maria Torres 3/3 → **42 claims extracted**, each tagged with topic vocabulary and an explicit `about_person` subject field
+- `group_claims` — pure Python, zero LLM cost: **16 candidate pairs** found by shared topic words or shared subject (e.g. "kessler's whereabouts")
+- `cross_reference` — one Groq call per candidate pair, judged `confirmed` / `consistent` / `needs_review`, streamed pair-by-pair (1/16 … 16/16)
+- `persist_findings` → analysis marked `completed`
+
+**[4:05–4:33] A confirmed, cross-witness contradiction**
+Top-sorted (highest severity) card opened: **confirmed / medium** — Kessler (p.4:9, *"I was working in Bay 3 on the morning of January 14th"*) vs. Torres (p.20:3, *"David Kessler was on his break at that time"*). Reasoning: both statements refer to the same time period and are mutually exclusive. A question is typed live into the chat panel — *"Does it matter that he explained why he changed his story?"* — and a real Groq response streams in, grounded in these two exact statements via `POST /api/contradictions/:id/messages`.
+
+**[4:33–4:42] A correctly-dismissed near-miss**
+Back to the contradictions list, opens a **consistent / low** card: Kessler (p.4:9, Bay 3 that morning) vs. Kessler — *same witness* — (p.20:3, *"I left work at 6:00 PM"*). Reasoning: no shared timeframe is asserted, so both can be true. This is the load-bearing proof point — grouping surfaced it as a candidate (shared subject: Kessler), but the LLM judge didn't rubber-stamp it as a contradiction just because grouping paired it.
+
+**[4:42–4:49] Timeline**
+Side-by-side witness columns (`grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))`) — David Kessler and Maria Torres's full claim lists with page:line citations, laid out for direct visual comparison rather than one long stacked feed.
